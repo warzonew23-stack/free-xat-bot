@@ -1,5 +1,6 @@
 import AutokickCommand from "./AutokickCommand.js"
 import AvatarCommand from "./AvatarCommand.js"
+import BanipCommand from "./BanipCommand.js" // Ezt adtuk hozzá
 import CharCommand from "./CharCommand.js"
 import ClearCommand from "./ClearCommand.js"
 import CommandsCommand from "./CommandsCommand.js"
@@ -22,6 +23,7 @@ import WelcomeTypeCommand from "./WelcomeTypeCommand.js"
 export default [
     AutokickCommand,
     AvatarCommand,
+    BanipCommand, // Ezt is beletettük a listába
     CharCommand,
     ClearCommand,
     CommandsCommand,
