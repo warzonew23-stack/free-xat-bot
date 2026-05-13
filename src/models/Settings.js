@@ -30,6 +30,10 @@ export const Settings = sequelize.define("settings", {
         type: DataTypes.BOOLEAN,
         defaultValue: true
     },
+    autoKickBanned: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false
+    },
     capsLockDetect: {
         type: DataTypes.BOOLEAN,
         defaultValue: true
