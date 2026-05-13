@@ -1,3 +1,4 @@
+import AutokickCommand from "./AutokickCommand.js"
 import AvatarCommand from "./AvatarCommand.js"
 import CharCommand from "./CharCommand.js"
 import ClearCommand from "./ClearCommand.js"
@@ -19,6 +20,7 @@ import WelcomeMsgCommand from "./WelcomeMsgCommand.js"
 import WelcomeTypeCommand from "./WelcomeTypeCommand.js"
 
 export default [
+    AutokickCommand,
     AvatarCommand,
     CharCommand,
     ClearCommand,
