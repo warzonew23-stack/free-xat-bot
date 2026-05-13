@@ -10,9 +10,6 @@ import { Settings } from "../models/Settings.js";
 import { OpenAI } from "../api/OpenAI.js";
 
 export class Bot {
-    /**
-     * Initializes the bot instance, handlers and WebSocket.
-     */
     constructor() {
         this.logger = setupLogger();
         this.state = new BotState();
@@ -26,10 +23,6 @@ export class Bot {
         this.init();
     }
 
-    /**
-     * Initializes the bot, loads settings, logs in,
-     * and connects to the chat server.
-     */
     async init () {
         try {
             await this.getFromDb();
@@ -64,14 +57,12 @@ export class Bot {
         }
     }
 
-    /**
-     * Log in to xat.
-     */
     async login () {
         var loginData;
 
         try {
-            loginData = JSON.parse(await fs.readFile("./cache/login.json", "utf-8"));
+            // VERCEL JAVÍTÁS: /tmp használata
+            loginData = JSON.parse(await fs.readFile("/tmp/login.json", "utf-8"));
         } catch { }
 
         if (loginData?.i === undefined) {
@@ -81,19 +72,10 @@ export class Bot {
         }
     }
 
-    /**
-     * Establishes a WebSocket connection.
-     * @param {number} room - Chat ID
-     */
     async connect (room = 0) {
         this.state.ws = WebSocketData(this, room);
     }
 
-    /**
-     * Sends a packet to xat.
-     * @param {string} name - Packet name
-     * @param {object} data - Packet data
-     */
     async send (name, data) {
         if (!this.state.ws) return;
 
@@ -113,9 +95,6 @@ export class Bot {
         }
     }
 
-    /**
-     * Retrieves about the current chat.
-     */
     async getChatInfo () {
         const data = await this.xatBlogAPI.chatInfo(this.state.envData.chat);
         if (!data?.chat?.id) {
@@ -125,11 +104,6 @@ export class Bot {
         this.state.chatInfo = data.chat;
     }
 
-    /**
-     * Reply to a message.
-     * @param {string} message - Message
-     * @param {string} to - User ID
-     */
     async reply (message, userId, to) {
         if (to === "pm") {
             return await this.sendPM(message, userId);
@@ -139,11 +113,6 @@ export class Bot {
         await this.sendMessage(message);
     }
 
-    /**
-     * Sends a PC to a user.
-     * @param {string} message - Message
-     * @param {number} userId - User ID
-     */
     async sendPC (message, userId) {
         await this.send("p", {
             u: userId,
@@ -153,11 +122,6 @@ export class Bot {
         });
     }
 
-    /**
-     * Sends a PM to a user.
-     * @param {string} message - Message
-     * @param {number} userId - User ID
-     */
     async sendPM (message, userId) {
         await this.send("p", {
             u: userId,
@@ -165,10 +129,6 @@ export class Bot {
         });
     }
 
-    /**
-     * Sends a message to the chat room.
-     * @param {string} message - Message
-     */
     async sendMessage (message) {
         await this.send("m", {
             t: message,
@@ -176,9 +136,6 @@ export class Bot {
         });
     }
 
-    /**
-     * Restart xat bot.
-     */
     async restart () {
         await this.send("C", {});
         this.state.isConnected = false;
@@ -186,9 +143,6 @@ export class Bot {
         this.connect();
     }
 
-    /**
-     * Force the bot to relogin.
-     */
     async relogin () {
         await this.send("v", {
             n: this.state.loginInfo.i,
@@ -196,19 +150,12 @@ export class Bot {
         });
     }
 
-    /**
-     * Load data from settings.
-     */
     async getFromDb () {
         this.state.settings = await Settings.findOne({
             where: { id: 1 }
         });
     }
 
-    /**
-     * Update fields on database.
-     * @param {object} toUpdate 
-     */
     async updateDb (toUpdate) {
         try {
             await Settings.update(toUpdate, {
@@ -220,12 +167,6 @@ export class Bot {
         }
     }
 
-    /**
-     * Kicks a user.
-     * @param {number} userId - User ID to kick.
-     * @param {string} [reason=''] - Reason for kick.
-     * @param {string} [sound=''] - Optional sound string.
-     */
     async kick (userId, reason = '', sound = '') {
         const maxKicks = Number(this.state.settings.maxKicks);
         const banDurationHours = Number(this.state.settings.banDurationHours);
@@ -250,14 +191,6 @@ export class Bot {
         });
     }
 
-    /**
-     * Bans a user for a specified number of hours.
-     * @param {number} userId - User ID to ban.
-     * @param {number} hours - Duration in hours.
-     * @param {string} reason - Reason for ban.
-     * @param {string} [type='g'] - Ban type (default global).
-     * @param {string} [gamebanid=''] - Optional gameban ID.
-     */
     async ban (userId, hours, reason, type = 'g', gamebanid = '') {
         if (hours < 0) hours = 1;
 
@@ -274,10 +207,6 @@ export class Bot {
         this.send("c", packet);
     }
 
-    /**
-     * Unbans a user.
-     * @param {number} userId - User ID to unban.
-     */
     async unban (userId) {
         this.send("c", {
             u: userId,
@@ -285,11 +214,6 @@ export class Bot {
         });
     }
 
-    /**
-     * Changes a user's rank.
-     * @param {number} userId - User ID.
-     * @param {string} rank - Rank string: 'owner', 'moderator', 'member', 'guest'.
-     */
     async giveRank (userId, rank) {
         const rankCmd = {
             owner: '/M',
@@ -306,12 +230,6 @@ export class Bot {
         });
     }
 
-    /**
-     * Gives a temporary rank to a user.
-     * @param {number} userId - User ID.
-     * @param {string} rank - Rank string: 'owner', 'moderator', 'member'.
-     * @param {number} hours - Number of hours (1-24).
-     */
     async giveTempRank (userId, rank, hours) {
         if (!hours || hours < 1 || hours > 24) hours = 1;
 
@@ -326,11 +244,6 @@ export class Bot {
         await this.sendPC(userId, `${rankCmd[rank]}${hours}`);
     }
 
-    /**
-     * Moderation filter based on OpenAI.
-     * @param {number} userId - User ID
-     * @param {string} message - Message to check
-     */
     async moderationFilters (userId, message) {
         if (!message || !userId) return;
 
@@ -350,7 +263,6 @@ export class Bot {
         const now = Date.now();
         let reason = null;
 
-        // Detect caps lock spam
         if (capsLockDetect) {
             const text = message.replace(/\s*\([^)]*\)/g, '').trim();
             const caps = (text.match(/\b[A-Z]{2,}\b/g) || []).length;
@@ -358,7 +270,6 @@ export class Bot {
                 reason = `Too many words in caps (${caps}/${capsLockMax} allowed)`;
         }
 
-        // Detect flood
         if (!reason && floodDetect) {
             if (this.state.lastMessageUserId !== userId || (now - this.state.lastMessageTimestamp > 30000))
                 this.state.usersFlood[userId] = 1;
@@ -377,7 +288,6 @@ export class Bot {
             }
         }
 
-        // Detect letter spam
         if (!reason && spamDetect) {
             const text = message.replace(/\s*\([^)]*\)/g, '').trim();
             for (const word of text.split(' ')) {
@@ -389,7 +299,6 @@ export class Bot {
             }
         }
 
-        // Detect smilies spam
         if (!reason && spamSmiliesDetect) {
             const text = message.toLowerCase().replace(/[^a-z :()]/g, '');
             const smilies = [":)", ":d", ":p", ";)", ":s", ":$", ":@", ":'(", ":-*", ":("];
@@ -404,7 +313,6 @@ export class Bot {
                 reason = `Too many smilies. Limit is ${maxSmilies} per message`;
         }
 
-        // Detect links
         if (!reason && linkDetect) {
             const text = message.toLowerCase();
             let allowed = false;
@@ -413,7 +321,6 @@ export class Bot {
                 reason = "Links are not allowed in chat";
         }
 
-        // Detect inappropriate language
         if (!reason && inappDetect && this.state.badwords.length > 0) {
             const msgNorm = message.toLowerCase().normalize("NFKC");
             for (const wordRaw of this.state.badwords) {
@@ -435,7 +342,6 @@ export class Bot {
             }
         }
 
-        // OpenAI moderation
         if (!reason && openAiDetect) {
             try {
                 const result = await this.OpenAI.moderate(message);
@@ -449,16 +355,12 @@ export class Bot {
             } catch (e) { }
         }
 
-        // Kick if any reason was found
         if (reason) {
             await this.kick(userId, reason);
             return;
         }
     }
 
-    /**
-     * Keeps the bot running and run tasks.
-     */
     async keepRunning () {
         runIfConnected(() => this.state.ws.ping(), this, 30000);
         runIfConnected(() => this.send("ping", []), this, 60000);
@@ -468,12 +370,6 @@ export class Bot {
         }), this, 900000);
     }
 
-    /**
-     * Checks if a user has enough permissions.
-     * @param {number} uid - User ID
-     * @param {string} from - Source (main, pc, pm)
-     * @returns {boolean} - True or False
-     */
     hasPermission (uid, from) {
         const hasPermission = this.state.envData.owners?.includes(Number(uid));
 
