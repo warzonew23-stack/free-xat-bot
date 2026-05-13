@@ -9,7 +9,8 @@ export function setupLogger() {
             })
         ),
         transports: [
-            new transports.File({ filename: "./logs/app.log" }),
+            // Áttettük a /tmp mappába, amit a Vercel engedélyez írni!
+            new transports.File({ filename: "/tmp/app.log" }),
             new transports.Console()
         ]
     });
