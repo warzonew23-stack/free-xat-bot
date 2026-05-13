@@ -8,17 +8,20 @@ export default {
         const userId = parseUser(packet.u);
         if (userId >= 1900000000) return;
 
-        // Add user to cache
+        // Felhasználó hozzáadása a memóriához
         const user = new User(packet);
         bot.state.addUser(userId, user);
 
-        // --- ÚJ VÉDELEM: Ha a felhasználó bannolva van és a védelem be van kapcsolva ---
+        // --- CSENDES AUTO-KICK ---
+        // Ha a felhasználó tiltva van (barna gyalog) és a védelem aktív
         if (bot.state.settings.autoKickBanned && user.isBanned()) {
-            await bot.kick(userId, "A tiltott felhasználók számára tilos a belépés!");
-            return; // Megállítjuk a folyamatot, hogy ne is kapjon üdvözlő üzenetet
+            // Üresen hagyjuk az indoklást (""), így a bot nem küld üzenetet a chatre
+            await bot.kick(userId, ""); 
+            return;
         }
+        // --- VÉGE ---
 
-        // Fetch necessary values
+        // Üdvözlő üzenet (ha be van kapcsolva)
         if (bot.state.settings.welcome_msg && bot.state.settings.welcome_msg != "off" && !user.hasBeenHere()) {
             const welcomeMessage = bot.state.settings.welcome_msg
                 .replace("{chatname}", bot.state.chatInfo.name)
@@ -27,7 +30,6 @@ export default {
                 .replace("{name}", user.getNick())
                 .replace("{uid}", userId);
 
-            // Send message via PM/PC
             await bot.reply(welcomeMessage, userId, bot.state.settings.welcome_type);
         }
     },
