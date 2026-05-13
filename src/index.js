@@ -4,43 +4,34 @@ import { Bot } from './core/Bot.js';
 
 config();
 
-let botInitialized = false;
+let botInstance = null;
 
-// Bot indító funkció
-async function initBot() {
-    if (botInitialized) return;
-    try {
+export default async function handler(req, res) {
+    if (!botInstance) {
+        console.log("[BOT] Adatbázis indítása Vercelen...");
         await sequelize.authenticate();
         await sequelize.sync();
-        new Bot();
-        console.log("[BOT] Adatbázis csatlakoztatva, bot indítása folyamatban...");
-        botInitialized = true;
-    } catch (error) {
-        console.error("Hiba az indításkor:", error);
+        botInstance = new Bot();
     }
-}
 
-// Ezt a függvényt hívja meg a Vercel
-export default async function handler(req, res) {
-    // Elindítjuk a botot, amikor a weboldal betöltődik
-    await initBot();
-
+    // 1. Megkezdjük a válaszadást a böngészőnek, de NEM zárjuk le!
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.status(200).send(`
+    res.write(`
         <html>
-            <head>
-                <title>xat Bot Vercel</title>
-                <style>
-                    body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; background-color: #121212; color: #00ff00; }
-                    .box { display: inline-block; padding: 20px; border: 2px solid #00ff00; border-radius: 10px; }
-                </style>
-            </head>
-            <body>
-                <div class="box">
-                    <h1>✅ A xat.com bot sikeresen telepítve Vercelen! 🚀</h1>
-                    <p>Mivel a Vercel szerver nélküli, ezt az oldalt érdemes nyitva hagyni.</p>
-                </div>
-            </body>
-        </html>
+        <body style="background-color: black; color: lime; text-align: center; font-family: Arial;">
+        <h2>A Vercel most épp futtatja a botot...</h2>
+        <p>Nézd a TestRadio42 szobát! A botnak most kell belépnie.</p>
     `);
+
+    // 2. A TRÜKK: Várakoztatjuk a Vercelt 9 másodpercig. 
+    // A Vercel ingyenes (Hobby) csomagja 10 másodperc után amúgy is levágja a kérést.
+    // Ezalatt a 9 másodperc alatt a bot zavartalanul kommunikálhat az xat.com-mal.
+    await new Promise(resolve => setTimeout(resolve, 9000));
+
+    // 3. Lezárjuk a kapcsolatot.
+    res.write(`<p>A 9 másodperc letelt. A Vercel most megszakítja a háttérfolyamatot, a bot nemsokára kilép.</p>
+        <p><b>Frissíts rá az oldalra (F5), ha azt akarod, hogy újra belépjen!</b></p>
+        </body></html>
+    `);
+    res.end();
 }
